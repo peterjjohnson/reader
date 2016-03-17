@@ -1,0 +1,14 @@
+; $Id: reader.info,v 1.2 2012-04-04 01:14:12 silenceandshadow Exp $
+
+name = reader
+
+description = HTML5 PDF reader using PDF.js.
+core = 7.x
+version = 1.1b
+
+dependencies[] = file
+dependencies[] = field
+
+files[] = page-reader.tpl.php
+files[] = reader.module
+files[] = template.tpl.php

@@ -1,0 +1,97 @@
+<?php // $Id: reader.module,v 1.20.4.75 2013-11-14 14:49:12 silenceandshadow Exp $
+
+/**
+ * @file
+ * Display PDF files using PDF.js and turn.js.
+ */
+
+/**
+ * Implementation of hook_menu().
+ */
+function reader_menu() {
+  $items = array();
+  $items['reader/%node'] = array(
+    'title' => t('View Document'),
+    'page callback' => 'reader_view',
+    'page arguments' => array(1),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK
+  );
+  return $items;
+}
+
+/**
+ * View a PDF
+ */
+function reader_view($node) {
+  node_build_content($node);
+  $output = 'This shouldn\'t happen';
+  foreach ($node->content as $field) {
+    if ($field['#formatter'] == 'reader_link') {
+      $entity = entity_load($field['#entity_type'], array($node->nid));
+      return field_view_field($field['#entity_type'], $entity[1], $field['#field_name'], array('type' => 'reader'));
+    }
+  }
+  return $output;
+}
+
+/**
+ * Implementation of CCK's hook_field_formatter_info().
+ */
+function reader_field_formatter_info() {
+  return array(
+    'reader' => array(
+      'label' => t('reader: HTML5 PDF reader'),
+      'field types' => array('file', 'uploadfield', 'link'),
+    ),
+    'reader_link' => array(
+      'label' => t('reader_link: Link to HTML5 PDF reader'),
+      'field types' => array('file', 'uploadfield', 'link'),
+    )
+  );
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function reader_theme() {
+  return array(
+    'reader' => array(
+      'variables' => array('html' => array()),
+      'path' => drupal_get_path('module', 'reader'),
+      'template' => 'reader',
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_field_formatter_view().
+ */
+function reader_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+
+  foreach ($items as $delta => $item) {
+    switch ($display['type']) {
+      case 'reader':
+        drupal_set_title($entity->title.' | '.$item['filename']);
+        break;
+      case 'reader_link':
+        $element[$delta] = array(
+          '#markup' => '<div class="reader-link"><div class="reader-link-title">'.$entity->title.'</div>'
+            .l(t('View'), 'reader/'.$entity->nid, array('attributes'=>array('class'=>array('reader-beta')))).' | '.l(t('Download'), file_create_url($item['uri']))
+        );
+        break;
+    }
+  }
+  return $element;
+}
+
+function reader_theme_registry_alter(&$theme_registry) {
+  $theme_hook = 'html'; // my hook name
+  // Get the path to this module
+  $modulepath = drupal_get_path('module', 'reader');
+  $theme_registry += drupal_find_theme_templates($theme_registry, '.tpl.php', $modulepath);
+  // Add the module path on top in the array of paths
+  //unset($theme_registry[$theme_hook]['theme paths'], $modulepath);
+  // dsm($theme_registry[$theme_hook]['theme paths']);
+}
